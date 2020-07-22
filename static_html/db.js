@@ -1,6 +1,7 @@
 
 
 var dburl = '';
+var dball = dburl ;
 var dbrecipe = dburl + "?method=recipe&id=" ;
 var dbing = dburl + "?method=ingredients&id=" ;
 var dbsearch = dburl + "?method=search&q=" ;
