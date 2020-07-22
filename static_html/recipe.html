@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="cache-control" content="no-cache" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="db.js"></script>
+<style>
+.grid-container {
+  display: grid;
+  grid-template-columns: 65% 30%;
+  grid-column-gap: 50px;
+}
+
+.main {
+	float: left ;
+	width: 65% ;
+}
+.ing {
+	float: right ;
+	width: 30% ;
+}
+
+@media only screen and (min-device-width : 320px) and (max-device-width : 480px) {
+.main {
+	float: none;
+	width: 100%;
+}
+.ing {
+	float: none;
+	width: 100%;
+}
+}
+@media only screen and (max-width : 800px) {
+.main {
+	float: none;
+	width: 100%;
+}
+.ing {
+	float: none;
+	width: 100%;
+}
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="title"></div>
+  <div id="description" class="main" ></div>
+  <div id="ingredients" class="ing" ><h2>Ingredients</h2></div>
+  <div id="instructions" class="main" ></div>
+
+</body>
+
+<script>
+
+var recipe ;
+var ingredients ;
+
+let searchParams = new URLSearchParams(window.location.search) ;
+let id = searchParams.get('id')
+
+console.log("id = " + id ) ;
+//d3.json("bin/getrecipe?id=" + id ).then ( recipe_callback ) ;
+//d3.json("bin/geting?id=" + id ).then ( ingredient_callback ) ;
+d3.json(dbrecipe + id ).then ( recipe_callback ) ;
+d3.json(dbing+ id ).then ( ingredient_callback ) ;
+
+
+function recipe_callback(data) {
+	recipe = flatten_results(data)[0] ;
+
+	d3.select("#title")
+	  .append("h1")
+	  .text(recipe.title) ;
+
+	var inst = d3.select("#instructions") ;
+	addSection(inst,recipe.instructions,"Instructions") ;
+	addSection(inst,recipe.modifications,"Notes") ;
+
+	var desc = d3.select("#description") ;
+	document.title = recipe.title ;
+	addImage( recipe.image ) ;
+	addYields( recipe.yields, recipe.yield_unit ) ;
+	addTime(recipe.preptime, "Preparation time") ;
+	addTime(recipe.cooktime, "Cooking time") ;
+        [ "category", "servings",  "rating" ,"cuisine", "source"  ]
+	   .forEach( field => safe_add(field) ) ;
+	addLink(recipe.link) ;
+
+        function addSection(section,data,title) {
+	        if (Boolean(data)) {
+	          section.append("h2").text(title) ;
+	          data.split("\n").forEach( line => {
+	            section.append("p")
+	              .html(line) ;
+	          }) ;
+	        }
+        }
+ 
+	function addImage( image ) {
+		if ( Boolean(image)) {
+		   desc.append("img")
+		       .attr("src", "data:image/jpeg;base64, " + image )
+		       .style('display', 'block')	
+		       .style('margin-left', 'auto')	
+		       .style('margin-right', 'auto')	;
+		}
+	}
+
+	function addYields( yield, unit ) {
+		if ( Boolean(yield)) {
+			var p = desc.append("p") ;
+			p.append("b").text("Yields") ;
+			p.append("text")
+			  .text(" " + yield + " " + unit ) ;
+		}
+	}
+	function addLink( link) {
+		if ( Boolean(link) && link.startsWith("h") ) {
+			var p = desc.append("p") ;
+			p.append("b").text("Webpage: ") ;
+			p.append("a")
+			  .attr('href',link)
+			  .text(link) ;
+		}
+	}
+
+	function addTime( value, label ) {
+		if ( Boolean(value)) {
+			var p = desc.append("p") ;
+			  p.append("b").text(label) ;
+			var dt = value ;
+			var time ;
+			if ( dt < 60 ) {
+				time = "" + dt + " secs" ;
+			}
+			else {
+				dt = dt / 60 ;
+				if ( dt < 60 ) {
+				  time = "" + dt + " mins" ;
+				}
+				else {
+				  var hr = dt / 60 ;
+				  var min = dt % 60 ;
+				  time = hr.toFixed(0) + " hrs" ;
+				  if ( min > 0 ) {
+					  time += " " + min + " mins" ;
+				  }
+				}
+			}
+			p.append("text")
+			  .text(" " + time ) ;
+		}
+	}
+	function safe_add(field) {
+		if ( Boolean(recipe[field])) {
+			var p = desc.append("p") ;
+			  p.append("b").text(field) ;
+			var value = recipe[field] ;
+			p.append("text")
+			  .text(" " + value ) ;
+		}
+	}
+}
+
+function ingredient_callback(data) {
+	ingredients = flatten_results(data) ;
+	igroups = d3.nest().key( i => i.inggroup).entries(ingredients) ;
+	var ing = d3.select("#ingredients") ;
+	igroups.forEach( g => {
+		if( g.key != "null"  ) {
+			ing.append("h3").text(g.key) 
+		}
+		var lst = ing.append("ul") ;
+		g.values.forEach ( i => {
+			if ( Boolean(i.item) ) {
+		    lst.append("li")
+		       .text( ingredientToString(i)) 
+		    ;
+		  }
+		} ) ;
+	}) ;
+
+	function ingredientToString(ing) {
+		console.log(ing) ;
+		var str = "" ;
+		if ( Boolean( ing.amount)  ) {
+		    if ( Number.isInteger(ing.amount) ) {
+		      str += ing.amount ;
+		    }
+		    else {
+		      str += ing.amount.toFixed(2) ;
+		    }
+		    if ( Boolean( ing.rangeamount) ) {
+			    str += "-" + ing.rangeamount ;
+		    }
+		    if ( Boolean( ing.unit) ) {
+		      str += " " + ing.unit ;
+		    }
+		    str +=   " "  ;
+		}
+		str += ing.item ;
+		return str ;
+	}
+}
+
+</script>
+
+</html>

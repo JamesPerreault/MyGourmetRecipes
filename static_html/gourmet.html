@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gourmet Recipe Manager</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="db.js"></script>
+    <link href="dist/css/tabulator.min.css" rel="stylesheet">
+    <script type="text/javascript" src="dist/js/tabulator.min.js"></script>
+<style>
+.credits {
+	font-size: small;
+	text-align: center;
+}
+</style>
+</head>
+
+<body>
+<h1>Gourmet Recipe Manager</h1>
+<div style="text-align:center; height:40px;">
+<input type="text" id="ing-search" onchange="ing_filter(this.value)" placeholder="Search for ingredient.." title="Type in an ingredient">
+<button type="button" onclick="clear_filter()">Clear</button>
+<button type="button" onclick="reset()">Reset</button>
+</div> 
+
+<div id="recipe-table" style="width:95%"></div>
+
+<p class="credits">
+Powered by <a href="https://dbhub.io/">DBHub.io</a>, <a href="http://tabulator.info/">Tabulate</a>, and <a href="https://d3js.org/">D3</a>. 
+Based on <a href="https://github.com/thinkle/gourmet/">Gourmet Recipe Manager</a>.
+</p>
+
+</body>
+
+<script>
+
+var table ;
+
+function ing_filter(ingredient) {
+	if ( ingredient.length == 0 ) {
+		clear_filter() ;
+		return ;
+	}
+//	d3.json("bin/searching?q=" + ingredient).then( function(data) {
+	d3.json(dbsearch  + ingredient).then( function(data) {
+		var ids = flatten_results(data).map( d => d.id) ;
+		console.log("ids " + ids ) ;
+		if ( Boolean(table) ) {
+		  table.setFilter("id", "in", ids);
+		}
+		else {
+	          listView( recipes.filter( d => ids.includes(d.id))) ;
+		}
+	} ) ;
+}
+
+function clear_filter() {
+	if ( Boolean(table)) {
+	  table.clearFilter();
+	}
+	else {
+	  listView(recipes) ;
+	}
+	d3.select("#ing-search").node().value="" ;
+}
+
+function reset() {
+	table.clearSort();
+	table.clearHeaderFilter();
+	clear_filter() ;
+}
+
+d3.json(dburl).then( showall_callback) ;
+//showall( showall_callback) ;
+//d3.json("bin/showall" ).then ( function( data) {
+function showall_callback( data) {
+
+  recipes = flatten_results(data) ;
+  if (window.screen.availWidth < 700 ) {
+          d3.select("#recipe-table").insert("ul") ;
+	  listView(recipes) ;
+	  return ;
+  }
+	recipes.forEach( row => { if (Boolean(row.thumb)) {
+		row.thumb = '<img src="data:image/jpeg;base64, ' + row.thumb +
+			'" width="30" height="30" />' ; 
+	} });
+  table = new Tabulator("#recipe-table", {
+        responsiveLayout:true,
+	pagination:"local", 
+        paginationSize:12, 
+ 	//height:605, // set height of table (in CSS or here), 
+                   //this enables the Virtual DOM and improves render speed 
+                   //dramatically (can be any valid css height value)
+ 	data:recipes, //assign data to table
+ 	layout:"fitColumns", //fit columns to width of table (optional)
+ 	columns:[ //Define Table Columns
+		//{formatter:"responsiveCollapse", width:30, minWidth:30, hozAlign:"center", resizable:false, {headerSort:false},
+		{title:"", field:"thumb", responsive:3, formatter:"html", width:30 },
+	 	{title:"Title", field:"title",headerFilter:"input",tooltip:true,
+		widthGrow:2,responsive:0,minWidth: 200},
+	 	{title:"Category", field:"category",width: 180, widthShrink:1,
+			responsive:2,
+			headerFilter: "select",
+			headerFilterParams: { values:true, sortValuesList:"asc"}
+		},
+	 	{title:"Cuisine", field:"cuisine",width: 180, widthShrink:1,
+			responsive:2,
+			headerFilter: "select",
+			headerFilterParams: { values:true, sortValuesList:"asc"}
+		},
+	 	{title:"Rating", field:"rating", width: 100, formatter:"star",
+			responsive:2,
+			widthShrink:1},
+	 	{title:"Source", field:"source", headerFilter: "select",
+			responsive:3,
+			headerFilterParams: { values:true, sortValuesList:"asc"}
+		},
+ 	],
+ 	rowClick:function(e, row){ 
+		var id = row.getData().id ;
+		window.open("recipe.html?id=" + id ) ;
+ 	},
+    });
+
+}
+
+function listView( data) {
+
+   var lst = d3.select("#recipe-table").select("ul").selectAll("li")
+	.data(data) ;
+
+   lst.select("a")
+		.attr("href", d=> "recipe.html?id=" + d.id)
+	        .text( d=> d.title ) ;
+
+   lst.enter().
+	append("li")
+		.append("a")
+		.attr("href", d=> "recipe.html?id=" + d.id)
+	        .text( d=> d.title ) ;
+
+   lst.exit().remove() ;
+}
+
+</script>
+
+</html>
+
