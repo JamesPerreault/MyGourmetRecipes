@@ -1,0 +1,1 @@
+This directory contains the code for an AWS-lambda function for accessing the data.  You could access the data directly without using this, but would need to store your API key in a public javascipt page.
