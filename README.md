@@ -8,6 +8,13 @@ This version is based on:
 * [Tabulate](http://tabulator.info/)
 * [D3](https://d3js.org/)  (See also my [Introduction to D3](https://github.com/JamesPerreault/D3-Introduction).)
 
-Here are some screenshots.
+## Screenshots
 
+The main screen:
+
+![](Screenshots/gourmet-main.png)
+
+Recipe screen:
+
+![](Screenshots/recipe-dim-sum.png)
 
