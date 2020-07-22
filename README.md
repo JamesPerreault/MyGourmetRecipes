@@ -1,6 +1,6 @@
 # My Gourmet Recipes
 
-This project is a port of [Gourmet Recipe Manager](https://github.com/thinkle/gourmet/) to a Web app.  Note that the creator of Gourmet, Tom Hinkle is has his own [Web based version](https://www.gourmetrecipemanager.com/#).
+This project is a port of [Gourmet Recipe Manager](https://github.com/thinkle/gourmet/) to a Web app.  Note that the creator of Gourmet, Tom Hinkle, has his own [Web based version](https://www.gourmetrecipemanager.com/#).
 
 This version is based on:
 
