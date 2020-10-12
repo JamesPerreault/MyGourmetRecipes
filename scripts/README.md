@@ -11,4 +11,4 @@ Utility scripts for managing recipes.  They are:
     * gourmet-insert-image.py : Add an image to the specified recipe.  Creates the thumbnail version while adding.
     * gourmet-scale-images.py : Scales a recipe's image.
 
-The remaining files are support modules.
+The remaining files are support modules. The files in the gourmet/ and default/ directory are from the original [Gourmet Recipe Manager](https://github.com/thinkle/gourmet/) and are used by the text file importer.
