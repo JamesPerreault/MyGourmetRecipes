@@ -1,4 +1,6 @@
-Utility scripts for managing recipes.  They are:
+Utility scripts for managing recipes. They all use a local copy of the database.  Any modifications made must be manually uploaded to [DBHub.io](https://DBHUB.io) in order to be used by the web application.
+
+Here is a summary of each script:
 
 * View recipes
     * print-recipes.py : print id and title of all recipes in database
