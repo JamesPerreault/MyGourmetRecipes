@@ -28,7 +28,8 @@ class PossiblyCaseInsensitiveDictionary (dict):
 
     def __getitem__ (self, k):
         if k in super().keys():
-            return super().__getitem__(self,k)
+            return super().__getitem__(k)
+            # return super().__getitem__(self,k)
         else:
             for t in self.transformations:
                 if hasattr(k,t):
@@ -189,7 +190,7 @@ class Converter:
         if u1 == u2:
             return 1.0
         if not density:
-            if self.density_table.has_key(item):
+            if item in self.density_table:
                 density=self.density_table[item]
             else:
                 return None

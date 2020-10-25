@@ -129,17 +129,19 @@ class RecipeParser:
             'instructions',
             re.compile('.*'),
             None])
-        def parse_yield (match_obj, full_text, attr):
-            colon,amt,unit = match_obj.groups()
-            return [(amt.strip(),'yields'),(unit.strip(),'yield_unit')]
         self.rules = [[
                 'yield',
                 re.compile('%(yield)s(:|s|\s-)\s-*%(num)s\s-*(.*)'%{
                     'yield':_('yield'),
                     'num':convert.NUMBER_REGEXP
                     },re.IGNORECASE),
-                parse_yield
+                self.parse_yield
                 ]] + self.rules                    
+
+    @staticmethod
+    def parse_yield (match_obj, full_text, attr):
+        colon,amt,unit = match_obj.groups()
+        return [(amt.strip(),'yields'),(unit.strip(),'yield_unit')]
 
     def break_into_paras (self):
         self.long_lines = False
