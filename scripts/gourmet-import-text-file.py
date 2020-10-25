@@ -2,11 +2,13 @@
 
 import gourmet
 import gourmet.ingredients
-from gourmet.generic_recipe_parser import RecipeParser
+from gourmet.generic_recipe_parser import RecipeParser, parse_group
+from gourmet import convert 
 import glob
 import re
 import SqliteDb
 import argparse
+import traceback
 
 parser = argparse.ArgumentParser(description='Import recipes from text file into sqlite db')
 parser.add_argument('files',  nargs="+",
@@ -32,7 +34,20 @@ if args.test:
 
 tags = [ 'ingredients', 'inggroup', 'yields', 'category', 'cuisine', 
         'source', 'link', 'preptime', 'cooktime', 'instructions', 
-        'description',  'rating', 'title', None ]
+        'description',  'rating', 'title','modifications',   None ]
+
+tags_to_reparse = ['yields', 'category', 'cuisine', 'preptime', 'cooktime'] 
+tags_number = ['yields',  'preptime', 'cooktime'] 
+
+number_re = re.compile('([^\d]*)\s*:?\s*(\d+.*)',re.IGNORECASE)
+tags_re = {'yields' : re.compile('([^\d]*)\s*:?\s*(\d+)\s+(.*)',re.IGNORECASE),
+        'category' : [re.compile( '(.*)category\s?:?\s*(.*)(cuisine.*)'), 
+                      re.compile( '(.*)category\s?:?\s*(.*)')], 
+           'cuisine': [ re.compile( '(.*)cuisine\s?:?\s*(.*)(category.*)'), 
+                      re.compile( '(.*)cuisine\s?:?\s*(.*)')], 
+           'preptime': number_re, 
+           'cooktime': number_re
+           }
 
 def print_tags():
     i = 0 ;
@@ -76,7 +91,34 @@ def edit_tag(parsed,i):
     #if new_tag < 0 or new_tag >= len(tags):
     #    print("Invalid tag number")
     #    continue
-    parsed[i][1] = tags[new_tag] 
+    new_tag = tags[new_tag] 
+    if not new_tag in tags_to_reparse:
+      parsed[i][1] = new_tag
+      return
+    # special logic for some tags
+    pattern = tags_re[new_tag]
+    line = parsed[i][0]
+    if type(pattern) != list:  # not cuisine or cateogry, which have 2
+        m = pattern.search(line)
+        if m:
+            if new_tag == 'yields':
+                update = parser.parse_yield(m,line,new_tag)
+            else:
+                update = parse_group(m,line,2,new_tag)
+    else:
+        m = pattern[0].search(line)
+        if not m:
+            m = pattern[1].search(line)
+        if m:
+            update = parse_group(m,line,2,new_tag)
+    # common update logic if a match was made
+    if m and len(update) > 0:
+        parsed[i] = list(update[0] )
+        for u in update[1:] :
+            parsed.insert(i+1,list(u))
+    else:
+        print("Reparsing failed\n")
+
         
 def parse_ingredients(parsed):
     retval = []
@@ -100,17 +142,28 @@ def check_and_add(recipe,argv,label):
     if argv:
         recipe[label] = argv 
 
+def convert_times(recipe):
+    conv = convert.get_converter()
+    for t in ['preptime','cooktime']:
+        if t in recipe and type(recipe[t])!=int:
+                secs = conv.timestring_to_seconds(recipe[t])
+                if secs != None:
+                    recipe[t]=secs
+                else:
+                    del recipe[t]
+
+
 def parseRecipe(parsed):
 
     ingr = parse_ingredients(parsed)
     category = None
-    recipe = { 'instructions' : "" }
+    recipe = { 'instructions' : "" , 'modifications' : ""}
     for line in parsed:
         tag = line[1]
         if tag == 'category':
             category = line[0]
-        elif tag == 'instructions':
-            recipe['instructions'] += "\n" + line[0]
+        elif tag == 'instructions' or tag == 'modifications':
+            recipe[tag] += "\n" + line[0]
         elif tag != None and tag != 'ingredients' and tag != 'inggroup':
             recipe[line[1]] = line[0]
     return recipe, category, ingr
@@ -141,18 +194,21 @@ for file in args.files:
                     split_item(parsed,i)
                 elif resp == 'c' or resp == '':
                     edit_tag(parsed,i)
-        except ValueError:
-            print("Invalid number")
+        except ValueError as e:
+            print("Invalid number ", e)
+            traceback.print_exc()
         except IndexError:
             print("Invalid index")
+            traceback.print_exc()
         display(parsed)
 
     recipe, category, ingr = parseRecipe(parsed)
     recipe['id'] = id
     recipe['deleted'] = False 
     check_and_add(recipe,args.url,'link')
-    check_and_add(recipe,args.category,'category')
     check_and_add(recipe,args.cuisine,'cuisine')
+    category = category if not args.category else args.category
+    convert_times(recipe)
 
     if args.test:
         print(category)
