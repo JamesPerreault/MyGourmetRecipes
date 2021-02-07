@@ -63,10 +63,13 @@ class RecipeParser:
                   'yields',
                   'yield_unit',
                   'modifications',
+                  'inggroup',
                   ]
 
     ALIASES = [('cooking time','cooktime'),
+               ('cook time','cooktime'),
                ('preparation time','preptime'),
+               ('prep time','preptime'),
                ('time','preptime'),
                ('author','source'),
                ('by','source'),
@@ -104,6 +107,12 @@ class RecipeParser:
              1],
             ['ingredients',
              re.compile("^\s*(pepper)\s*$"),
+             1],
+            ['ingredients',
+             re.compile("^\s*(salt and *[a-z]*\s*pepper)\s*$"),
+             1],
+            ['link',
+                re.compile("^\s*(https?:\/\/.*)\s*$"),
              1],
             ['servings',
              re.compile("serv(ing|e)s?:?\s*%(num)s|%(num)s\s*servings?"%{
