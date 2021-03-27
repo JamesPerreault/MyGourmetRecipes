@@ -36,6 +36,11 @@ class Db:
             cmd = "update recipe set image = ?, thumb = ? where id = ? "
             self.cursor.execute(cmd,[image,thumb,id])
         self.conn.commit()
+    def updateThumb(self,id,thumb):
+        if thumb != None:
+            cmd = "update recipe set thumb = ? where id = ? "
+            self.cursor.execute(cmd,[thumb,id])
+            self.conn.commit()
     def checkRecipe(self,id):
         self.cursor.execute("select id from recipe where id = ?", [id] ) 
         res = self.cursor.fetchone()
